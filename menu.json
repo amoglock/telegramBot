@@ -1,15 +1,8 @@
 [
     {
-        "breakfast": [
-            "Boiled eggs",
-            "Moolk"
-        ],
-        "lunch": [
-            "Shawarma"
-        ],
-        "drinks": [
-            "Tea",
-            "Water"
-        ]
+        "breakfast": [],
+        "lunch": [],
+        "salad": [],
+        "drinks": []
     }
 ]
