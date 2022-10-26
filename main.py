@@ -1,14 +1,11 @@
-import json
-
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
-import constants
+import service_commands
+from constants import About
 
 app = Client("my_bot")
 admin = False  # Flag for special functions
-
-# TODO: Move all service functions into another file
 
 
 @app.on_message(filters.command("location"))  # For the /location command
@@ -19,8 +16,8 @@ async def send_location(client: Client, message: Message) -> None:
     username = message.chat.first_name
     # send_venue() sends not only  an image of the location, but also additionally
     # Name and address parameters for a clearer message.
-    await app.send_venue(user, latitude=constants.LATITUDE, longitude=constants.LONGITUDE,
-                         title=f"{username} You can find us here", address=constants.ADDRESS)
+    await app.send_venue(user, latitude=About.latitude, longitude=About.longitude,
+                         title=f"{username} You can find us here", address=About.address)
 
 
 @app.on_message(filters.command("about"))  # For the /about command
@@ -28,7 +25,7 @@ async def send_location(client: Client, message: Message) -> None:
     """Sends description "about" company from constants.py"""
 
     # Send a message "about" followed by an image in the next message
-    await app.send_message(message.chat.id, constants.description_about)
+    await app.send_message(message.chat.id, About.description)
     await app.send_photo(message.chat.id,
                          "AgACAgIAAxkBAAIHCWNYCKw--ZSj3L2IqOcgC8CYUwzBAAK1wzEb563BSgH3lCVfHCF0AAgBAAMCAAN4AAceBA",
                          caption=" До встречи за нашим семейным столом!🤗")
@@ -46,7 +43,7 @@ async def menu_today(client: Client, message: Message) -> None:
 
 
 @app.on_message(filters.command("add"))  # For the /add command
-async def add_to_menu(client: Client, message: Message) -> None:
+async def switch_on(client: Client, message: Message) -> None:
     """Switch the 'admin' to True and following message from user will be processed by 'add_to_menu' func"""
 
     global admin
@@ -59,39 +56,17 @@ async def add_to_menu(client: Client, message: Message) -> None:
 
 # After the /add command following message will be grab here
 @app.on_message(filters.text)
-async def answer(client: Client, message: Message) -> None:
+async def switch_off(client: Client, message: Message) -> None:
+    """Switcher for 'admin' variable."""
+
     global admin
-    # TODO: replace the match case with a more convenient implementation (in an array)
+    if admin:
+        if message.text == "Выход" or message.text == "выход":
+            admin = False
+            await app.send_message(message.chat.id, "Ты вышел из добавления")
+            return
+        bot_answer = await service_commands.parse_answer(message)
+        await app.send_message(message.chat.id, bot_answer)
 
-    while admin is True:
-        match message.text.split(maxsplit=1):
-            case ["1", *obj]:
-                await add_new("breakfast", *obj)
-            case ["2", *obj]:
-                await add_new("lunch", *obj)
-            case ["3", *obj]:
-                await add_new("salad", *obj)
-            case ["4", *obj]:
-                await add_new("drinks", *obj)
-            case ["Выход" | "выход"]:
-                admin = False
-                await app.send_message(message.chat.id, "Ты вышел из добавления")
-                return
-            case _:
-                await app.send_message(message.chat.id, "Неправильно! Число и блюдо.\nНапример\n**4 чай**")
-                break
-        await app.send_message(message.chat.id, "Success")
-        break
-
-
-async def add_new(category: str, dish: str) -> None:
-    """Adding new element into menu.json"""
-
-    with open('menu.json', 'r', encoding='utf8') as file:
-        data = json.load(file)
-        data[0][category].append(dish.capitalize())
-        with open('menu.json', 'w', encoding='utf8') as outfile:
-            json.dump(data, outfile, ensure_ascii=False, indent=4)
-
-
-app.run()
+if __name__ == "__main__":
+    app.run()
