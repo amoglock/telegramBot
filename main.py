@@ -1,8 +1,8 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
-import service_commands
-from constants import About
+import internal_actions
+from constants import About, BotMessages
 
 app = Client("my_bot")
 admin = False  # Flag for special functions
@@ -36,6 +36,7 @@ async def send_location(client: Client, message: Message) -> None:
 async def menu_today(client: Client, message: Message) -> None:
     """Sends the menu for today"""
 
+    await internal_actions.set_today()
     await app.send_message(message.chat.id, "Сегодня готовим:\n"
                                             "- Карифурава (крем суп из цветной капусты, с хрустящей курой) 🍜\n"
                                             "- Салат с тыквой, кус-кусом и брынзой 🥗\n"
@@ -48,10 +49,7 @@ async def switch_on(client: Client, message: Message) -> None:
 
     global admin
     admin = True
-    await app.send_message(message.chat.id, "Ты добавляешь новое блюдо в базу.\nЧтобы все прошло успешно, введи "
-                                            "сообщение в формате:\n"
-                                            "[1, 2, 3 или 4][пробел][название] без скобок.\nГде 1 это завтрак, "
-                                            "2 обед, 3 салат, 4 напиток")
+    await app.send_message(message.chat.id, BotMessages.add_dish_message)
 
 
 # After the /add command following message will be grab here
@@ -65,7 +63,7 @@ async def switch_off(client: Client, message: Message) -> None:
             admin = False
             await app.send_message(message.chat.id, "Ты вышел из добавления")
             return
-        bot_answer = await service_commands.parse_answer(message)
+        bot_answer = await internal_actions.parse_answer(message)
         await app.send_message(message.chat.id, bot_answer)
 
 if __name__ == "__main__":
