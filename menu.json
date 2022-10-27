@@ -1,8 +1,5 @@
-[
-    {
-        "breakfast": [],
-        "lunch": [],
-        "salad": [],
-        "drinks": []
-    }
-]
+{
+    "breakfast": {},
+    "entree": {},
+    "salad": {}
+}
