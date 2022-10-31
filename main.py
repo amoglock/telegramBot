@@ -1,5 +1,8 @@
+import json
+
 from pyrogram import Client, filters
-from pyrogram.types import Message
+from pyrogram.types import Message, ReplyKeyboardMarkup
+from pyrogram.types.bots_and_keyboards import callback_query
 
 import internal_actions
 from constants import About, BotMessages
@@ -36,7 +39,6 @@ async def send_location(client: Client, message: Message) -> None:
 async def menu_today(client: Client, message: Message) -> None:
     """Sends the menu for today"""
 
-    await internal_actions.set_today()
     await app.send_message(message.chat.id, "Сегодня готовим:\n"
                                             "- Карифурава (крем суп из цветной капусты, с хрустящей курой) 🍜\n"
                                             "- Салат с тыквой, кус-кусом и брынзой 🥗\n"
@@ -47,9 +49,40 @@ async def menu_today(client: Client, message: Message) -> None:
 async def switch_on(client: Client, message: Message) -> None:
     """Switch the 'admin' to True and following message from user will be processed by 'add_to_menu' func"""
 
-    global admin
-    admin = True
-    await app.send_message(message.chat.id, BotMessages.add_dish_message)
+    await admin_switcher()
+    bot_message = BotMessages.return_message(message.text)
+    await app.send_message(message.chat.id, bot_message)
+
+
+REPLY_MESSAGE = "Choose the button below"
+REPLY_MESSAGE_BUTTONS = [
+    [
+        "breakfast", "first_course", "entree"
+    ]
+]
+
+
+@app.on_message(filters.command("set_today"))
+async def today(client: Client, message: Message) -> None:
+    """Set menu for today"""
+
+    # await admin_switcher()
+    bot_message = BotMessages.return_message(message.text)
+    await app.send_message(message.chat.id, bot_message)
+    text = REPLY_MESSAGE
+    reply_markup = ReplyKeyboardMarkup(REPLY_MESSAGE_BUTTONS, one_time_keyboard=True, resize_keyboard=True)
+    await message.reply(
+        text=text,
+        reply_markup=reply_markup
+    )
+
+
+@app.on_message(filters.regex("breakfast"))
+async def set_breakfast(client, message):
+    with open('menu.json', 'r', encoding='utf8') as file:
+        data = json.load(file)
+    for a, b in enumerate(data[message.text]):
+        await app.send_message(message.chat.id, f"{b} {a}")
 
 
 # After the /add command following message will be grab here
@@ -57,14 +90,24 @@ async def switch_on(client: Client, message: Message) -> None:
 async def switch_off(client: Client, message: Message) -> None:
     """Switcher for 'admin' variable."""
 
-    global admin
+    # TODO: move the admin "switch" to a separate function
     if admin:
         if message.text == "Выход" or message.text == "выход":
-            admin = False
+            await admin_switcher()
             await app.send_message(message.chat.id, "Ты вышел из добавления")
             return
-        bot_answer = await internal_actions.parse_answer(message)
-        await app.send_message(message.chat.id, bot_answer)
+
+        bot_message = await internal_actions.parse_answer(message)
+        await app.send_message(message.chat.id, bot_message)
+
+
+async def admin_switcher() -> None:
+    global admin
+    if admin:
+        admin = False
+    else:
+        admin = True
+
 
 if __name__ == "__main__":
     app.run()
