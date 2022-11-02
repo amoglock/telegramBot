@@ -1,14 +1,12 @@
-import json
-
 from pyrogram import Client, filters
 from pyrogram.types import Message, ReplyKeyboardMarkup
-from pyrogram.types.bots_and_keyboards import callback_query
 
 import internal_actions
-from constants import About, BotMessages
+from constants import About, BotMessages, Today
 
 app = Client("my_bot")
 admin = False  # Flag for special functions
+set_today = False
 
 
 @app.on_message(filters.command("location"))  # For the /location command
@@ -29,9 +27,7 @@ async def send_location(client: Client, message: Message) -> None:
 
     # Send a message "about" followed by an image in the next message
     await app.send_message(message.chat.id, About.description)
-    await app.send_photo(message.chat.id,
-                         "AgACAgIAAxkBAAIHCWNYCKw--ZSj3L2IqOcgC8CYUwzBAAK1wzEb563BSgH3lCVfHCF0AAgBAAMCAAN4AAceBA",
-                         caption=" До встречи за нашим семейным столом!🤗")
+    await app.send_photo(message.chat.id, About.photo, caption=" До встречи за нашим семейным столом!🤗")
 
 
 # For the /menu command or mach a regex in a regular chat message
@@ -39,10 +35,9 @@ async def send_location(client: Client, message: Message) -> None:
 async def menu_today(client: Client, message: Message) -> None:
     """Sends the menu for today"""
 
-    await app.send_message(message.chat.id, "Сегодня готовим:\n"
-                                            "- Карифурава (крем суп из цветной капусты, с хрустящей курой) 🍜\n"
-                                            "- Салат с тыквой, кус-кусом и брынзой 🥗\n"
-                                            "- Глазированный свиной бок с булгуром 🥩\n")
+    await app.send_message(message.chat.id, f"Сегодня готовим:\n- На завтрак {Today.breakfast}\n"
+                                            f"- А после 14: 00 будут:\n{Today.first_course}\n"
+                                            f"- {Today.entree}\n- А еще {Today.salad}")
 
 
 @app.on_message(filters.command("add"))  # For the /add command
@@ -57,19 +52,17 @@ async def switch_on(client: Client, message: Message) -> None:
 REPLY_MESSAGE = "Choose the button below"
 REPLY_MESSAGE_BUTTONS = [
     [
-        "breakfast", "first_course", "entree"
+        "breakfast", "first_course", "entree", "salad"
     ]
 ]
 
 
-@app.on_message(filters.command("set_today"))
-async def today(client: Client, message: Message) -> None:
-    """Set menu for today"""
+@app.on_message(filters.command("show_me"))
+async def show_buttons(client: Client, message: Message) -> None:
+    """Switch set_today flag for set today menu"""
 
-    # await admin_switcher()
-    bot_message = BotMessages.return_message(message.text)
-    await app.send_message(message.chat.id, bot_message)
-    text = REPLY_MESSAGE
+    await set_today_switcher()
+    text = BotMessages.return_message(message.text)
     reply_markup = ReplyKeyboardMarkup(REPLY_MESSAGE_BUTTONS, one_time_keyboard=True, resize_keyboard=True)
     await message.reply(
         text=text,
@@ -77,12 +70,29 @@ async def today(client: Client, message: Message) -> None:
     )
 
 
-@app.on_message(filters.regex("breakfast"))
-async def set_breakfast(client, message):
-    with open('menu.json', 'r', encoding='utf8') as file:
-        data = json.load(file)
-    for a, b in enumerate(data[message.text]):
-        await app.send_message(message.chat.id, f"{b} {a}")
+@app.on_message(
+    filters.regex("breakfast") | filters.regex("first_course") | filters.regex("entree") | filters.regex("salad"))
+async def show_all(client: Client, message: Message):
+    """Actions after pushed button"""
+
+    if set_today:
+        data = internal_actions.open_db()
+        for a in data[message.text]:
+            await app.send_message(message.chat.id, f"{a} {data[message.text][a]['name']}")
+        await set_today_switcher()
+    else:
+        pass
+
+
+@app.on_message(filters.regex(r"^[С-с]егодня [1-4] \d\d?$"))
+async def set_today(client: Client, message: Message):
+    """Set menu on today"""
+    # TODO: Change names!!!
+    _, a, b = message.text.split()
+    a = internal_actions.a[a]
+    data = internal_actions.open_db()
+    b = data[a][b]['name']
+    Today.set_today(a, b)
 
 
 # After the /add command following message will be grab here
@@ -90,7 +100,6 @@ async def set_breakfast(client, message):
 async def switch_off(client: Client, message: Message) -> None:
     """Switcher for 'admin' variable."""
 
-    # TODO: move the admin "switch" to a separate function
     if admin:
         if message.text == "Выход" or message.text == "выход":
             await admin_switcher()
@@ -107,6 +116,14 @@ async def admin_switcher() -> None:
         admin = False
     else:
         admin = True
+
+
+async def set_today_switcher() -> None:
+    global set_today
+    if set_today:
+        set_today = False
+    else:
+        set_today = True
 
 
 if __name__ == "__main__":
