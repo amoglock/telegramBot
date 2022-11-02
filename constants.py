@@ -3,9 +3,10 @@ from typing import NamedTuple
 
 # Coordinates and address DOM location, description
 class About(NamedTuple):
-    latitude = float(41.993007)
-    longitude = float(41.763007)
-    address = str("67 Ekvtime Takaishvili St, Ureki, Грузия")
+    latitude = float(41.99415)
+    longitude = float(41.76485)
+    address = str("40 Guria St, Ureki, Грузия")
+    photo = str("AgACAgIAAxkBAAIHCWNYCKw--ZSj3L2IqOcgC8CYUwzBAAK1wzEb563BSgH3lCVfHCF0AAgBAAMCAAN4AAceBA")
     description = str("Мы открыли DOM в Грузии!\n""DOM - это не ресторан или кафе, это место, где тебя ждут и дарят "
                       "добро. ""Мы меняем меню каждый день, угощаем если у вас нет денег и даём понять, ""что DOM - "
                       "не точка на карте, а состояние души 🙌\n\n""В течении дня, за очень скромную плату, "
@@ -27,7 +28,7 @@ class BotMessages(NamedTuple):
     def return_message(message):
         if message == "/add":
             return BotMessages.add_dish_message
-        if message == "/set_today":
+        if message == "/show_me":
             return BotMessages.set_today_message
     # ===================================================
 
@@ -38,7 +39,14 @@ class Today(NamedTuple):
     entree = str()
     salad = str()
 
-    @classmethod
-    def set_today(cls):
-        pass
+    @staticmethod
+    def set_today(a, dish):
+        if a == "breakfast":
+            Today.breakfast = dish
+        elif a == "first_course":
+            Today.first_course = dish
+        elif a == "entree":
+            Today.entree = dish
+        elif a == "salad":
+            Today.salad = dish
 # ====================================================
