@@ -20,16 +20,22 @@ async def parse_answer(message: Message) -> str:
 async def add_to_menu(category: str, dish: str) -> str:
     """Adding new element into menu.json"""
 
-    with open('menu.json', 'r', encoding='utf8') as file:
-        data = json.load(file)
-    if dish.capitalize() in data[category].keys():
+    data = open_db()
+    if dish.capitalize() in [data[category][key]['name'] for key in data[category].keys()]:
         return "Это уже есть в базе"
-    data[category][dish.capitalize()] = {"today": False, "photo": None}
+    dish_id = len(data[category]) + 1
+    data[category][dish_id] = {"name": dish.capitalize(), "photo": None}
 
     with open('menu.json', 'w', encoding='utf8') as outfile:
         json.dump(data, outfile, ensure_ascii=False, indent=4)
     return f"Ты успешно добавил {dish.capitalize()} в базу.\nМожно продолжать или введи 'выход'"
 
+
+def open_db():
+    """Open JSON DB and object return"""
+
+    with open('menu.json', 'r', encoding='utf8') as file:
+        return json.load(file)
 
 # async def set_today():
 #     with open('menu.json', 'r', encoding='utf8') as file:
