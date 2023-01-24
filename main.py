@@ -8,7 +8,6 @@ app = Client("my_bot")
 admin = False  # Flag for special functions
 set_today = False
 
-#########################################
 
 @app.on_message(filters.command("location"))  # For the /location command
 async def send_location(client: Client, message: Message) -> None:
